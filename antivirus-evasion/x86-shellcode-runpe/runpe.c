@@ -100,6 +100,8 @@ runpe(PBYTE* pe_image)
                           &p_mapped,
                           sizeof p_mapped,
                           NULL)) {
+    ret = -7;
+    goto kill_process;
   }
 
   return 0;
