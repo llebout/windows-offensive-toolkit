@@ -53,3 +53,4 @@ dkms.conf
 /antivirus-evasion/.vs/antivirus-evasion/v15
 /antivirus-evasion/Release
 /antivirus-evasion/x86-shellcode-runpe/Release
+/shellcode-utils/.vs/shellcode-utils/v15
