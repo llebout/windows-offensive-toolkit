@@ -6,11 +6,15 @@
 int
 entry(PBYTE* pe_image)
 {
-  /* HACK: Force compiler to store the string on the stack */
-  WCHAR kernel32_dll[] = { L'k', L'e', L'r', L'n', L'e', L'l', L'3',
-                           L'2', L'.', L'd', L'l', L'l', 0 };
+  struct dll_imports imports;
 
-  PVOID kernel32_base = get_module_base(kernel32_dll);
+  if (resolve_dll_imports(&imports) < 0) {
+    return -1;
+  }
+
+  if (runpe(&imports, pe_image) < 0) {
+    return -2;
+  }
 
   return 0;
 }

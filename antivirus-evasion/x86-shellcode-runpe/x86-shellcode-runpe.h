@@ -56,6 +56,71 @@ get_module_base(LPWSTR name);
 PVOID
 get_export_address(PBYTE module, LPSTR name);
 
+typedef DWORD WINAPI
+proto_GetModuleFileNameW(HMODULE hModule, LPWSTR lpFilename, DWORD nSize);
+typedef BOOL WINAPI
+proto_CreateProcessW(LPCWSTR lpApplicationName,
+                     LPWSTR lpCommandLine,
+                     LPSECURITY_ATTRIBUTES lpProcessAttributes,
+                     LPSECURITY_ATTRIBUTES lpThreadAttributes,
+                     BOOL bInheritHandles,
+                     DWORD dwCreationFlags,
+                     LPVOID lpEnvironment,
+                     LPCWSTR lpCurrentDirectory,
+                     LPSTARTUPINFOW lpStartupInfo,
+                     LPPROCESS_INFORMATION lpProcessInformation);
+typedef LPWSTR WINAPI
+proto_GetCommandLineW(void);
+typedef BOOL WINAPI
+proto_GetThreadContext(HANDLE hThread, LPCONTEXT lpContext);
+typedef BOOL WINAPI
+proto_ReadProcessMemory(HANDLE hProcess,
+                        LPCVOID lpBaseAddress,
+                        LPVOID lpBuffer,
+                        SIZE_T nSize,
+                        SIZE_T* lpNumberOfBytesRead);
+typedef LPVOID WINAPI
+proto_VirtualAllocEx(HANDLE hProcess,
+                     LPVOID lpAddress,
+                     SIZE_T dwSize,
+                     DWORD flAllocationType,
+                     DWORD flProtect);
+typedef BOOL WINAPI
+proto_WriteProcessMemory(HANDLE hProcess,
+                         LPVOID lpBaseAddress,
+                         LPCVOID lpBuffer,
+                         SIZE_T nSize,
+                         SIZE_T* lpNumberOfBytesWritten);
+typedef BOOL WINAPI
+proto_SetThreadContext(HANDLE hThread, CONST CONTEXT* lpContext);
+typedef DWORD WINAPI
+proto_ResumeThread(HANDLE hThread);
+typedef BOOL WINAPI
+proto_TerminateProcess(HANDLE hProcess, UINT uExitCode);
+typedef BOOL WINAPI
+proto_CloseHandle(HANDLE hObject);
+typedef NTSTATUS NTAPI
+proto_ZwUnmapViewOfSection(HANDLE ProcessHandle, PVOID BaseAddress);
+
+struct dll_imports
+{
+  proto_GetModuleFileNameW* GetModuleFileNameW;
+  proto_CreateProcessW* CreateProcessW;
+  proto_GetCommandLineW* GetCommandLineW;
+  proto_GetThreadContext* GetThreadContext;
+  proto_ReadProcessMemory* ReadProcessMemory;
+  proto_VirtualAllocEx* VirtualAllocEx;
+  proto_WriteProcessMemory* WriteProcessMemory;
+  proto_SetThreadContext* SetThreadContext;
+  proto_ResumeThread* ResumeThread;
+  proto_TerminateProcess* TerminateProcess;
+  proto_CloseHandle* CloseHandle;
+  proto_ZwUnmapViewOfSection* ZwUnmapViewOfSection;
+};
+
+int
+resolve_dll_imports(struct dll_imports* imports);
+
 /* runpe.c */
-typedef NTSYSAPI NTSTATUS
-ZwUnmapViewOfSection(HANDLE ProcessHandle, PVOID BaseAddress);
+int
+runpe(struct dll_imports* imports, PBYTE* pe_image);

