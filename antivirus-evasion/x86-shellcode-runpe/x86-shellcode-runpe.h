@@ -55,3 +55,7 @@ PVOID
 get_module_base(LPWSTR name);
 PVOID
 get_export_address(PBYTE module, LPSTR name);
+
+/* runpe.c */
+typedef NTSYSAPI NTSTATUS
+ZwUnmapViewOfSection(HANDLE ProcessHandle, PVOID BaseAddress);

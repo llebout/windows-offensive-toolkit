@@ -43,7 +43,7 @@ void
 libc_memcpy(void* dst, const void* src, size_t n)
 {
   unsigned char* b_dst = dst;
-  unsigned char* b_src = src;
+  const unsigned char* b_src = src;
 
   for (size_t i = 0; i < n; ++i) {
     b_dst[i] = b_src[i];

