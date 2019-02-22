@@ -175,6 +175,9 @@ runpe(struct dll_imports *imports, PBYTE* pe_image)
     goto kill_process;
   }
 
+  imports->CloseHandle(proc_info.hProcess);
+  imports->CloseHandle(proc_info.hThread);
+
   return 0;
 
 kill_process:
