@@ -52,9 +52,9 @@ typedef struct DLL_LDR_DATA_TABLE_ENTRY
 } DLL_LDR_DATA_TABLE_ENTRY, *DLL_PLDR_DATA_TABLE_ENTRY;
 
 PVOID
-get_module_base(LPWSTR name);
+get_module_base(PWSTR name);
 PVOID
-get_export_address(PBYTE module, LPSTR name);
+get_export_address(PBYTE module, PSTR name);
 
 typedef DWORD WINAPI
 proto_GetModuleFileNameW(HMODULE hModule, LPWSTR lpFilename, DWORD nSize);
