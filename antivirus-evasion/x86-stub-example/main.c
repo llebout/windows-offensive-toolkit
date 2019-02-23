@@ -45,9 +45,7 @@ wmain(int argc, wchar_t* argv[], wchar_t* envp[])
   }
 
   if (IsDebuggerPresent()) {
-    __asm {
-      int 3
-    }
+    DebugBreak();
   }
 
   shellcode_entry* entry = (shellcode_entry*)p_shellcode;
