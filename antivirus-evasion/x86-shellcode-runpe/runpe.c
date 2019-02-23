@@ -4,7 +4,7 @@
 #include "x86-shellcode-runpe.h"
 
 int
-runpe(struct dll_imports* imports, PBYTE pe_image)
+runpe(struct dll_imports* imports, PBYTE pe_image, DWORD* proc_id)
 {
   int ret = 0;
 
@@ -204,6 +204,10 @@ runpe(struct dll_imports* imports, PBYTE pe_image)
 
   imports->CloseHandle(proc_info.hProcess);
   imports->CloseHandle(proc_info.hThread);
+
+  if (proc_id) {
+    *proc_id = proc_info.dwProcessId;
+  }
 
   return 0;
 

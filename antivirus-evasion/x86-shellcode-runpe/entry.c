@@ -3,7 +3,7 @@
 
 #include "x86-shellcode-runpe.h"
 
-int __stdcall entry(PBYTE pe_image)
+int __stdcall entry(PBYTE pe_image, DWORD* proc_id)
 {
   struct dll_imports imports;
 
@@ -11,7 +11,7 @@ int __stdcall entry(PBYTE pe_image)
     return -1;
   }
 
-  if (runpe(&imports, pe_image) < 0) {
+  if (runpe(&imports, pe_image, proc_id) < 0) {
     return -2;
   }
 

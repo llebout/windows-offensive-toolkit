@@ -122,5 +122,4 @@ int
 resolve_dll_imports(struct dll_imports* imports);
 
 /* runpe.c */
-int
-runpe(struct dll_imports* imports, PBYTE pe_image);
+int __stdcall entry(PBYTE pe_image, DWORD* proc_id);
