@@ -39,7 +39,7 @@ runpe(struct dll_imports *imports, PBYTE pe_image)
                       NULL,
                       NULL,
                       FALSE,
-                      0,
+                      CREATE_SUSPENDED,
                       NULL,
                       NULL,
                       &start_info,
