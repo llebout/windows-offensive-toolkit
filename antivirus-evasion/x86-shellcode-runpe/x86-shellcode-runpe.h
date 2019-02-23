@@ -123,4 +123,4 @@ resolve_dll_imports(struct dll_imports* imports);
 
 /* runpe.c */
 int
-runpe(struct dll_imports* imports, PBYTE* pe_image);
+runpe(struct dll_imports* imports, PBYTE pe_image);
