@@ -1,7 +1,7 @@
 #pragma once
 
 /* main.c */
-typedef int __stdcall shellcode_entry(PBYTE pe_image);
+typedef int __stdcall shellcode_entry(PBYTE pe_image, DWORD* proc_id);
 
 /* file.c */
 int

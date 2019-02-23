@@ -50,11 +50,14 @@ wmain(int argc, wchar_t* argv[], wchar_t* envp[])
 
   shellcode_entry* entry = (shellcode_entry*)p_shellcode;
 
-  int s = entry(p_pe);
+  DWORD proc_id;
+  int s = entry(p_pe, &proc_id);
   if (s < 0) {
     printf("Shellcode's entrypoint returned a negative value: %d\n", s);
     return -4;
   }
+
+  printf("Success. proc_id: %ld\n", proc_id);
 
   VirtualFree(p_shellcode, 0, MEM_RELEASE);
   VirtualFree(p_pe, 0, MEM_RELEASE);
