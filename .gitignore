@@ -56,3 +56,4 @@ dkms.conf
 /shellcode-utils/.vs/shellcode-utils/v15
 /shellcode-utils/pe-shellcode-extractor/x64/Debug
 /shellcode-utils/x64/Debug
+/antivirus-evasion/x86-stub-example/Release
