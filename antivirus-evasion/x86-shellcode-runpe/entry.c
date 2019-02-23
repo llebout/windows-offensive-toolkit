@@ -3,8 +3,7 @@
 
 #include "x86-shellcode-runpe.h"
 
-int __stdcall
-entry(PBYTE pe_image)
+int __stdcall entry(PBYTE pe_image)
 {
   struct dll_imports imports;
 

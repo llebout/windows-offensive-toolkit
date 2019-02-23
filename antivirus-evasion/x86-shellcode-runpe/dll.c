@@ -45,11 +45,19 @@ get_module_base(PWSTR name)
   DLL_PLDR_DATA_TABLE_ENTRY first_ldr_entry;
   DLL_PLDR_DATA_TABLE_ENTRY ldr_entry;
 
+#ifdef _WIN64
+  /*
+    The quad word in slot 0x60 is the current process PEB structure
+    address.
+  */
+  peb = (PPEB)__readgsqword(0x60);
+#else
   /*
     The double word in slot 0x30 is the current process PEB structure
     address.
   */
   peb = (PPEB)__readfsdword(0x30);
+#endif
 
   /*
     The PEB_LDR_DATA structure is incomplete, Reserved2[1] equals to
