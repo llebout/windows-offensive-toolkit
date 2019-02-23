@@ -5,7 +5,7 @@
 
 /*
   Uninitialized array to enlarge SizeOfImage and reduce
-  probability of address conflicts.    
+  probability of address conflicts.
 */
 static BYTE dummy[0x100000];
 
@@ -25,9 +25,15 @@ wmain(int argc, wchar_t* argv[], wchar_t* envp[])
 
   printf("dummy: %p\n", dummy);
 
+  MessageBoxA(NULL,
+              "Attach a debugger or click OK to continue.",
+              "Information",
+              MB_OK | MB_ICONINFORMATION);
+
   PVOID p_shellcode;
   DWORD size;
-  if (read_file_to_mem(argv[1], &p_shellcode, &size, PAGE_EXECUTE_READWRITE) < 0) {
+  if (read_file_to_mem(argv[1], &p_shellcode, &size, PAGE_EXECUTE_READWRITE) <
+      0) {
     printf("Could not read file to memory: %ws\n", argv[1]);
     return -2;
   }
@@ -36,6 +42,12 @@ wmain(int argc, wchar_t* argv[], wchar_t* envp[])
   if (read_file_to_mem(argv[2], &p_pe, &size, PAGE_READWRITE) < 0) {
     printf("Could not read file to memory: %ws\n", argv[2]);
     return -3;
+  }
+
+  if (IsDebuggerPresent()) {
+    __asm {
+      int 3
+    }
   }
 
   shellcode_entry* entry = (shellcode_entry*)p_shellcode;
