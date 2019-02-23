@@ -163,7 +163,7 @@ runpe(struct dll_imports *imports, PBYTE pe_image)
     goto kill_process;
   }
 
-  thread_ctx.Eax = (DWORD)(pe_image + p_nt->OptionalHeader.AddressOfEntryPoint);
+  thread_ctx.Eax = (DWORD)(p_mapped + p_nt->OptionalHeader.AddressOfEntryPoint);
 
   if (!imports->SetThreadContext(proc_info.hThread, &thread_ctx)) {
     ret = -9;
