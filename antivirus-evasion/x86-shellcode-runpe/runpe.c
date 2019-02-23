@@ -4,7 +4,7 @@
 #include "x86-shellcode-runpe.h"
 
 int
-runpe(struct dll_imports *imports, PBYTE* pe_image)
+runpe(struct dll_imports *imports, PBYTE pe_image)
 {
   int ret = 0;
 
