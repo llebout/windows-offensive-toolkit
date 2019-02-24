@@ -19,13 +19,13 @@ loop {
             if thread_exists ( tid ) {
                 resume_thread ( tid )
             } else {
-				/*
-					This needs InterlockedCompare32Exchange64 to lock_revive and unlock_map on acquire
-					to eliminate possibility of dead locks.
-					Unfortunately such an atomic operation is not possible on Intel x86.
-					Intel Itanium provides the necessary instructions but that violates
-					the project requirements.
-				*/
+                /*
+                    This needs InterlockedCompare32Exchange64 to lock_revive and unlock_map on acquire
+                    to eliminate possibility of dead locks.
+                    Unfortunately such an atomic operation is not possible on Intel x86.
+                    Intel Itanium provides the necessary instructions but that violates
+                    the project requirements.
+                */
                 if try_lock_revive {
                     // locked
                     // corrupted, state lost, owner killed
