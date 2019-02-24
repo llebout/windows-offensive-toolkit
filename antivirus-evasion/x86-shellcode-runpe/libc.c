@@ -23,7 +23,7 @@ libc_wstrcmp(const wchar_t* s1, const wchar_t* s2)
 wchar_t
 libc_wtolower(const wchar_t c)
 {
-  if (c >= L'A' && c <= 'Z') {
+  if (c >= L'A' && c <= L'Z') {
     return c + (L'a' - L'A');
   }
   return c;
