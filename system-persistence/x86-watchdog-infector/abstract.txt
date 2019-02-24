@@ -1,0 +1,39 @@
+tick_unchanged = 0
+tick_cache = tick
+tick_interval = 100ms
+loop {
+    if try_lock_map {
+        // locked
+        ++tick
+        unlock_revive
+        if not process_exists ( pid ) {
+            pid = start_process ( path )
+        }
+    } else {
+        if tick == tick_cache {
+            ++tick_unchanged
+        } else {
+            tick_cache = tick
+        }
+        if tick_unchanged > 100 {
+            if thread_exists ( tid ) {
+                resume_thread ( tid )
+            } else {
+				/*
+					This needs InterlockedCompare32Exchange64 to lock_revive and unlock_map on acquire
+					to eliminate possibility of dead locks.
+					Unfortunately such an atomic operation is not possible on Intel x86.
+					Intel Itanium provides the necessary instructions but that violates
+					the project requirements.
+				*/
+                if try_lock_revive {
+                    // locked
+                    // corrupted, state lost, owner killed
+                    // recover anyways, the process might get respawned twice but that's the risk
+                    unlock_map
+                }
+            }
+        }
+    }
+    wait ( tick_interval )
+}

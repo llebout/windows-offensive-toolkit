@@ -129,6 +129,9 @@
     <ClCompile Include="entry.c" />
     <ClCompile Include="process.c" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="abstract.txt" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
