@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.421
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "x86-watchdog-infector", "x86-watchdog-infector\x86-watchdog-infector.vcxproj", "{3EFB93A0-60EF-4C31-8D44-75AB87BF8241}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3EFB93A0-60EF-4C31-8D44-75AB87BF8241}.Debug|x64.ActiveCfg = Debug|x64
+		{3EFB93A0-60EF-4C31-8D44-75AB87BF8241}.Debug|x64.Build.0 = Debug|x64
+		{3EFB93A0-60EF-4C31-8D44-75AB87BF8241}.Debug|x86.ActiveCfg = Debug|Win32
+		{3EFB93A0-60EF-4C31-8D44-75AB87BF8241}.Debug|x86.Build.0 = Debug|Win32
+		{3EFB93A0-60EF-4C31-8D44-75AB87BF8241}.Release|x64.ActiveCfg = Release|x64
+		{3EFB93A0-60EF-4C31-8D44-75AB87BF8241}.Release|x64.Build.0 = Release|x64
+		{3EFB93A0-60EF-4C31-8D44-75AB87BF8241}.Release|x86.ActiveCfg = Release|Win32
+		{3EFB93A0-60EF-4C31-8D44-75AB87BF8241}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {73C5E0DD-2356-4B7C-9F3A-711481751CE7}
+	EndGlobalSection
+EndGlobal
