@@ -26,6 +26,12 @@
     <ClCompile Include="process.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="watchdog.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="infect.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Text Include="abstract.txt">
