@@ -32,6 +32,12 @@
     <ClCompile Include="infect.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="dll.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="libc.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Text Include="abstract.txt">

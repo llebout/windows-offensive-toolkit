@@ -102,10 +102,11 @@
     <Link>
       <EnableCOMDATFolding>false</EnableCOMDATFolding>
       <OptimizeReferences>false</OptimizeReferences>
-      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
       <EntryPointSymbol>entry</EntryPointSymbol>
+      <RandomizedBaseAddress>false</RandomizedBaseAddress>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -126,8 +127,10 @@
     <ClInclude Include="x86-watchdog-infector.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="dll.c" />
     <ClCompile Include="entry.c" />
     <ClCompile Include="infect.c" />
+    <ClCompile Include="libc.c" />
     <ClCompile Include="process.c" />
     <ClCompile Include="watchdog.c" />
   </ItemGroup>

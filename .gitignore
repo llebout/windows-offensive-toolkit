@@ -61,3 +61,4 @@ dkms.conf
 /antivirus-evasion/x86-stub-example/x64/Release
 /system-persistence/.vs/system-persistence/v15
 /system-persistence/x86-watchdog-infector/Release
+/system-persistence/x86-watchdog-infector/Debug

