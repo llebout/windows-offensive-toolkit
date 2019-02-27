@@ -161,12 +161,41 @@ resolve_dll_imports(struct dll_imports* imports)
   if (imports->OpenProcess == NULL) {
     return -10;
   }
+  char data_WaitForSingleObject[] = { 'W', 'a', 'i', 't', 'F', 'o', 'r',
+                                      'S', 'i', 'n', 'g', 'l', 'e', 'O',
+                                      'b', 'j', 'e', 'c', 't', 0 };
+  imports->WaitForSingleObject = (PVOID)get_export_address(
+    get_module_base((PWSTR)data_kernel32_dll), (PSTR)data_WaitForSingleObject);
+  if (imports->WaitForSingleObject == NULL) {
+    return -11;
+  }
+  char data_ReleaseMutex[] = { 'R', 'e', 'l', 'e', 'a', 's', 'e',
+                               'M', 'u', 't', 'e', 'x', 0 };
+  imports->ReleaseMutex = (PVOID)get_export_address(
+    get_module_base((PWSTR)data_kernel32_dll), (PSTR)data_ReleaseMutex);
+  if (imports->ReleaseMutex == NULL) {
+    return -12;
+  }
+  char data_CreateMutexA[] = { 'C', 'r', 'e', 'a', 't', 'e', 'M',
+                               'u', 't', 'e', 'x', 'A', 0 };
+  imports->CreateMutexA = (PVOID)get_export_address(
+    get_module_base((PWSTR)data_kernel32_dll), (PSTR)data_CreateMutexA);
+  if (imports->CreateMutexA == NULL) {
+    return -13;
+  }
+  char data_DuplicateHandle[] = { 'D', 'u', 'p', 'l', 'i', 'c', 'a', 't',
+                                  'e', 'H', 'a', 'n', 'd', 'l', 'e', 0 };
+  imports->DuplicateHandle = (PVOID)get_export_address(
+    get_module_base((PWSTR)data_kernel32_dll), (PSTR)data_DuplicateHandle);
+  if (imports->DuplicateHandle == NULL) {
+    return -14;
+  }
   char data_NtCreateSection[] = { 'N', 't', 'C', 'r', 'e', 'a', 't', 'e',
                                   'S', 'e', 'c', 't', 'i', 'o', 'n', 0 };
   imports->NtCreateSection = (PVOID)get_export_address(
     get_module_base((PWSTR)data_ntdll_dll), (PSTR)data_NtCreateSection);
   if (imports->NtCreateSection == NULL) {
-    return -11;
+    return -15;
   }
   char data_NtMapViewOfSection[] = { 'N', 't', 'M', 'a', 'p', 'V', 'i',
                                      'e', 'w', 'O', 'f', 'S', 'e', 'c',
@@ -174,7 +203,7 @@ resolve_dll_imports(struct dll_imports* imports)
   imports->NtMapViewOfSection = (PVOID)get_export_address(
     get_module_base((PWSTR)data_ntdll_dll), (PSTR)data_NtMapViewOfSection);
   if (imports->NtMapViewOfSection == NULL) {
-    return -12;
+    return -16;
   }
   char data_NtQuerySystemInformation[] = { 'N', 't', 'Q', 'u', 'e', 'r', 'y',
                                            'S', 'y', 's', 't', 'e', 'm', 'I',
@@ -184,7 +213,7 @@ resolve_dll_imports(struct dll_imports* imports)
     (PVOID)get_export_address(get_module_base((PWSTR)data_ntdll_dll),
                               (PSTR)data_NtQuerySystemInformation);
   if (imports->NtQuerySystemInformation == NULL) {
-    return -13;
+    return -17;
   }
   char data_NtUnmapViewOfSection[] = { 'N', 't', 'U', 'n', 'm', 'a', 'p',
                                        'V', 'i', 'e', 'w', 'O', 'f', 'S',
@@ -192,7 +221,7 @@ resolve_dll_imports(struct dll_imports* imports)
   imports->NtUnmapViewOfSection = (PVOID)get_export_address(
     get_module_base((PWSTR)data_ntdll_dll), (PSTR)data_NtUnmapViewOfSection);
   if (imports->NtUnmapViewOfSection == NULL) {
-    return -14;
+    return -18;
   }
   return 0;
 }

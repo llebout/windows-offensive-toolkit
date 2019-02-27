@@ -12,21 +12,24 @@ ThreadProc(_In_ LPVOID lpParameter)
     return -1;
   }
 
-  return monitor_proc_id(&imports, lpParameter);
+  struct thread_params* thread_params = lpParameter;
+
+  return monitor_proc_id(&imports, thread_params->map, thread_params->mutex);
 }
 
 int
-monitor_proc_id(struct dll_imports* imports, struct watchdog_info* map)
+monitor_proc_id(struct dll_imports* imports,
+                struct watchdog_info* map,
+                HANDLE mutex)
 {
-  ULONGLONG tick_proc_id_unchanged = 0;
-  ULONGLONG proc_id_cache = 0;
   PROCESS_INFORMATION proc_info;
   STARTUPINFOW start_info;
 
   do {
 
-    if (_InterlockedCompareExchange(&map->lock, 1, 0) == 0) {
+    DWORD wait_result = imports->WaitForSingleObject(mutex, INFINITE);
 
+    if (wait_result == WAIT_OBJECT_0 || wait_result == WAIT_ABANDONED) {
       if (process_exists(imports, map->proc_id) == FALSE) {
         libc_memset(&proc_info, 0, sizeof proc_info);
         libc_memset(&start_info, 0, sizeof start_info);
@@ -50,21 +53,10 @@ monitor_proc_id(struct dll_imports* imports, struct watchdog_info* map)
         }
       }
 
-      map->lock = 0;
-    } else {
-      if (proc_id_cache == map->proc_id &&
-          process_exists(imports, map->proc_id) == FALSE) {
-        ++tick_proc_id_unchanged;
-      } else {
-        proc_id_cache = map->proc_id;
-      }
+      imports->Sleep(1000);
 
-      if (tick_proc_id_unchanged > 100) {
-        map->lock = 0;
-      }
+      imports->ReleaseMutex(mutex);
     }
-
-    imports->Sleep(1000);
   } while (1);
 
   return 0;

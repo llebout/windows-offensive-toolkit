@@ -46,6 +46,8 @@ process_exists(struct dll_imports* imports, ULONGLONG proc_id)
     return -1;
   }
 
+  PVOID p_original_spi = p_spi;
+
   do {
     if (((ULONGLONG)p_spi->UniqueProcessId) == proc_id) {
       ret = 1;
@@ -61,7 +63,7 @@ process_exists(struct dll_imports* imports, ULONGLONG proc_id)
   } while (1);
 
 free_p_spi:
-  imports->VirtualFree(p_spi, 0, MEM_RELEASE);
+  imports->VirtualFree(p_original_spi, 0, MEM_RELEASE);
 
   return ret;
 }

