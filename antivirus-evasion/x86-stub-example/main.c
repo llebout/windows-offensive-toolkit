@@ -83,6 +83,8 @@ wmain(int argc, wchar_t* argv[], wchar_t* envp[])
       .proc_id = proc_id,
     };
 
+    lstrcpyW(param.command_line, GetCommandLineW());
+
     if (!GetModuleFileNameW(NULL, param.path, MAX_PATH)) {
       ret = -6;
       goto free_watchdog;

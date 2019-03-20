@@ -21,6 +21,7 @@ struct shell_param
   SIZE_T shell_size;
   ULONGLONG proc_id;
   WCHAR path[MAX_PATH + 1];
+  WCHAR command_line[32768];
 };
 
 typedef int __stdcall watchdog_entry(struct meta_param *param);
