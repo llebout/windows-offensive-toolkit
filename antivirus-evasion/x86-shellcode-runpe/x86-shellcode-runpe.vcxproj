@@ -27,6 +27,9 @@
     <ClCompile Include="libc.c" />
     <ClCompile Include="runpe.c" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="response_file.txt" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{9E096648-FCC6-404E-9768-C29129E4FBDA}</ProjectGuid>
@@ -106,7 +109,7 @@
       <Optimization>Disabled</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <SDLCheck>true</SDLCheck>
+      <SDLCheck>false</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <BufferSecurityCheck>false</BufferSecurityCheck>
@@ -119,6 +122,8 @@
       <EntryPointSymbol>entry</EntryPointSymbol>
       <RandomizedBaseAddress>true</RandomizedBaseAddress>
       <GenerateDebugInformation>false</GenerateDebugInformation>
+      <FunctionOrder>response_file.txt</FunctionOrder>
+      <GenerateMapFile>true</GenerateMapFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">

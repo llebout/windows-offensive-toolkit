@@ -33,4 +33,7 @@
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="response_file.txt" />
+  </ItemGroup>
 </Project>

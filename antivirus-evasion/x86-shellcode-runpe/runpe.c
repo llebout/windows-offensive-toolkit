@@ -92,7 +92,7 @@ runpe(struct dll_imports* imports, PBYTE pe_image, DWORD* proc_id)
 
   if (!NT_SUCCESS(
         imports->ZwUnmapViewOfSection(proc_info.hProcess, p_remote_base))) {
-    ret - 5;
+    ret = -5;
     goto kill_process;
   }
 
