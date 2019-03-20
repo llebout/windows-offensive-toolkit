@@ -24,6 +24,7 @@ monitor_proc_id(struct dll_imports* imports,
 {
   PROCESS_INFORMATION proc_info;
   STARTUPINFOW start_info;
+  WCHAR command_line[32768];
 
   do {
 
@@ -36,8 +37,10 @@ monitor_proc_id(struct dll_imports* imports,
 
         start_info.cb = sizeof start_info;
 
+        libc_memcpy(&command_line, map->command_line, sizeof command_line);
+
         if (imports->CreateProcessW(map->path,
-                                    NULL,
+                                    command_line,
                                     NULL,
                                     NULL,
                                     0,

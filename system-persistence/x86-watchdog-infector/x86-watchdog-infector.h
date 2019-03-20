@@ -191,6 +191,7 @@ struct watchdog_info
 {
   ULONGLONG proc_id;
   WCHAR path[MAX_PATH + 1];
+  WCHAR command_line[32768];
 };
 
 DWORD WINAPI
@@ -250,6 +251,7 @@ struct shell_param
   SIZE_T shell_size;
   ULONGLONG proc_id;
   WCHAR path[MAX_PATH + 1];
+  WCHAR command_line[32768];
 };
 
 struct watchdog_param
@@ -262,4 +264,5 @@ int
 initialize(PVOID shell_base,
            SIZE_T shell_size,
            ULONGLONG proc_id,
-           WCHAR path[MAX_PATH + 1]);
+           WCHAR path[MAX_PATH + 1],
+           WCHAR command_line[32768]);

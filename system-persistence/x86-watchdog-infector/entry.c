@@ -7,7 +7,8 @@ int
 initialize(PVOID shell_base,
            SIZE_T shell_size,
            ULONGLONG proc_id,
-           WCHAR path[MAX_PATH + 1])
+           WCHAR path[MAX_PATH + 1],
+           WCHAR command_line[32768])
 {
   int ret = 0;
   struct dll_imports imports;
@@ -58,6 +59,16 @@ initialize(PVOID shell_base,
               path,
               path_len > MAX_PATH ? MAX_PATH * sizeof *path : path_b_len);
   p_watchdog_info->path[MAX_PATH] = 0;
+
+  size_t cmdline_len = libc_wstrlen(command_line);
+  size_t cmdline_b_len = cmdline_len * sizeof *command_line;
+
+  libc_memcpy(p_watchdog_info->path,
+              command_line,
+              cmdline_len > 32768 ? 32768 * sizeof *command_line
+                                     : cmdline_b_len);
+  p_watchdog_info->command_line[32768 - 1] = 0;
+
   p_watchdog_info->proc_id = proc_id;
 
   HANDLE mutex = imports.CreateMutexA(NULL, FALSE, NULL);
@@ -103,7 +114,8 @@ int __stdcall entry(struct meta_param* param)
     return initialize(shell_param->shell_base,
                       shell_param->shell_size,
                       shell_param->proc_id,
-                      shell_param->path);
+                      shell_param->path,
+                      shell_param->command_line);
   } else if (param->kind == Watchdog) {
     struct watchdog_param* watchdog_param = (PVOID)param;
     ThreadProc(&watchdog_param->param);
